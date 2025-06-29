@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Paneli - Medikal Kayıt Sistemi</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script defer src="admin.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white font-sans">
+
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6 text-center text-teal-300">🛠️ Admin Paneli - Medikal Kayıt Sistemi</h1>
+
+    <div class="mb-8 space-x-4">
+      <button onclick="tumHastalariGetir()" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded">Tüm Hastalar</button>
+      <button onclick="pdfCiktisiAl()" class="bg-green-700 hover:bg-green-800 text-white px-6 py-2 rounded">PDF Kaydet</button>
+    </div>
+
+    <div id="tabloContainer" class="bg-gray-800 rounded shadow p-4 overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-600">
+        <thead class="bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left font-semibold">#</th>
+            <th class="px-6 py-3 text-left font-semibold">Adres</th>
+            <th class="px-6 py-3 text-left font-semibold">İsim</th>
+            <th class="px-6 py-3 text-left font-semibold">Hastalıklar</th>
+          </tr>
+        </thead>
+        <tbody id="hastaTablosu" class="divide-y divide-gray-700"></tbody>
+      </table>
+    </div>
+
+    <div class="mt-10">
+      <h2 class="text-xl font-semibold mb-2 text-teal-200">🔍 Adrese Göre Hasta Sorgula</h2>
+      <input id="sorguAdres" placeholder="Adres giriniz" class="w-full p-2 border border-gray-600 bg-gray-800 text-white rounded mb-2">
+      <button onclick="veriGetirAdresIle()" class="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded">Veri Getir</button>
+      <pre id="adresSonucu" class="bg-gray-800 mt-2 p-3 border border-gray-600 rounded text-sm text-green-300"></pre>
+    </div>
+
+    <div class="mt-10">
+      <h2 class="text-xl font-semibold mb-2 text-teal-200">✏️ Hastalık Güncelle / Sil (Admin)</h2>
+      <input id="guncelleAdres" placeholder="Hedef Adres" class="w-full p-2 border border-gray-600 bg-gray-800 text-white rounded mb-2">
+      <input id="guncelleIndeks" placeholder="Hastalık İndeksi" class="w-full p-2 border border-gray-600 bg-gray-800 text-white rounded mb-2">
+      <input id="yeniDeger" placeholder="Yeni Hastalık Adı (güncelleme için)" class="w-full p-2 border border-gray-600 bg-gray-800 text-white rounded mb-2">
+
+      <div class="space-x-2">
+        <button onclick="adminSil()" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded">Sil</button>
+        <button onclick="adminGuncelle()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">Güncelle</button>
+      </div>
+      <p id="guncelleSonuc" class="mt-2 text-sm text-green-400 font-medium"></p>
+    </div>
+
+  </div>
+
+</body>
+</html>

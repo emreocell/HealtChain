@@ -1,0 +1,7 @@
+3 farklı terminal açılıp 
+
+1.terminalde sunucuyu başlatıyoruz "cd backend" sonrasında "node server.js"
+
+2.terminalde hardhat'ı başlatıyoruz "cd medikal-kayit" sonrasında "npx hardhat node"
+
+3.terminalde deploy.js'yi çalıştırmak ve localhost açmak için önce "cd medikal-kayit" sonrasında "npx hardhat run scripts/deploy.js --network localhost"
