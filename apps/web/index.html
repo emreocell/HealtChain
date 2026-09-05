@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Security-first research prototype for blockchain-backed medical record integrity and AI-assisted clinical education.">
+  <title>HealthChain Decision Support</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/dist/ethers.umd.min.js" defer></script>
+  <script src="/assets/contract-abi.js" defer></script>
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Research prototype</p>
+        <h1 id="page-title">HealthChain Decision Support</h1>
+        <p class="lede">A security-first modernization of a graduation thesis prototype: health record integrity proofs are anchored on-chain while clinical content stays off-chain, and AI output is deliberately limited to educational decision support.</p>
+      </div>
+      <aside class="hero-meta" aria-label="Runtime status">
+        <div class="meta-row"><span class="meta-label">Wallet</span><span class="meta-value mono" id="wallet-address">not connected</span></div>
+        <div class="meta-row"><span class="meta-label">Network</span><span class="meta-value" id="deployment-network">loading</span></div>
+        <div class="meta-row"><span class="meta-label">Contract</span><span class="meta-value mono" id="deployment-address">loading</span></div>
+      </aside>
+    </section>
+
+    <div class="notice"><strong>Important:</strong> This is not a clinical system and not medical advice. Public blockchains are transparent and immutable. Never place names, diagnoses, symptoms, documents, identifiers, or other personal health information directly on-chain.</div>
+
+    <div class="statusbar">
+      <span id="app-status" data-tone="neutral">Ready. Deploy the contract and connect a wallet.</span>
+      <button class="btn" id="connect-wallet" type="button">Connect wallet</button>
+    </div>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Anchor a record proof</h2>
+        <p class="panel-intro">The browser salts and hashes your local record. Only the 32-byte digest and a hashed record category are written on-chain.</p>
+        <form id="record-form" class="form-grid">
+          <label>Record category
+            <input id="record-type" maxlength="80" placeholder="e.g. laboratory" autocomplete="off" required>
+          </label>
+          <label>Local clinical note
+            <textarea id="record-note" maxlength="2000" placeholder="Demo content used to build a local integrity proof. It is not sent to the smart contract." required></textarea>
+          </label>
+          <div class="actions"><button class="btn" type="submit">Create & anchor proof</button></div>
+        </form>
+        <div class="proof-box">
+          <span class="small">Latest local digest</span>
+          <code id="proof-digest">No proof created yet.</code>
+          <button class="btn secondary" id="download-proof" type="button" disabled>Download private proof bundle</button>
+          <p class="small">The proof bundle contains the original local payload and salt. Store it securely; it may contain health information.</p>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Provider write authorization</h2>
+        <p class="panel-intro">Patients can authorize a provider wallet to anchor new hashes on their behalf. This controls writes only; it does not make blockchain data private.</p>
+        <form id="provider-form" class="form-grid">
+          <label>Provider wallet address
+            <input id="provider-address" placeholder="0x…" autocomplete="off" required>
+          </label>
+          <label class="check"><input id="provider-authorized" type="checkbox" checked> Authorize this provider to write record proofs</label>
+          <div class="actions"><button class="btn" type="submit">Update authorization</button></div>
+        </form>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:24px 0">
+        <h2>Verify a local proof</h2>
+        <p class="panel-intro">Recompute the salted digest from a previously downloaded proof bundle. Verification happens in your browser.</p>
+        <label>Proof JSON
+          <input id="proof-file" type="file" accept="application/json,.json">
+        </label>
+        <p id="verify-result" class="small">No proof selected.</p>
+      </article>
+
+      <article class="panel wide">
+        <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <h2>On-chain integrity timeline</h2>
+            <p class="panel-intro">Records for the connected wallet: <strong id="record-count">0</strong>.</p>
+          </div>
+          <button class="btn secondary" id="refresh-records" type="button">Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Data hash</th><th>Author</th><th>Anchored</th><th>Status</th></tr></thead>
+            <tbody id="records-body"><tr><td class="empty-state" colspan="5">Connect a wallet to load records.</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <h2>AI-assisted clinical education</h2>
+        <p class="panel-intro">Optional research feature. The app does not persist this form payload, but the configured AI provider may process it under its own data policies. Do not enter identifying information.</p>
+        <form id="ai-form" class="form-grid">
+          <label>Symptoms (comma separated)
+            <input id="ai-symptoms" maxlength="1000" placeholder="headache, nausea">
+          </label>
+          <label>Known conditions (comma separated)
+            <input id="ai-conditions" maxlength="1000" placeholder="optional">
+          </label>
+          <label>Medications (comma separated)
+            <input id="ai-medications" maxlength="1000" placeholder="optional; do not include identifiers">
+          </label>
+          <label>Question for educational discussion
+            <textarea id="ai-question" maxlength="500" placeholder="What questions should I discuss with a licensed clinician?"></textarea>
+          </label>
+          <label class="check"><input id="ai-consent" type="checkbox"> I understand this sends the entered health context to the configured AI provider and I consent for this demo request.</label>
+          <div class="actions"><button class="btn" id="ai-submit" type="submit">Generate educational notes</button></div>
+        </form>
+        <pre class="ai-result" id="ai-result">No AI request has been made.</pre>
+      </article>
+    </section>
+
+    <footer>
+      Built as a research and portfolio project. Integrity is not confidentiality, and an AI response is not clinical validation. See the repository documentation for the threat model, limitations, and original thesis context.
+    </footer>
+  </main>
+</body>
+</html>
