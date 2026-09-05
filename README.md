@@ -1,27 +1,28 @@
-# AI Healthcare Decision Support - HealthChain v2
+# AI Healthcare Decision Support — HealthChain v2
 
-> Security-first research prototype for **medical-record integrity proofs + patient-controlled blockchain authorization + AI-assisted clinical education**.
+> Security-first research prototype for **medical-record integrity proofs, patient-controlled blockchain authorization, and AI-assisted clinical education**.
 
 [![CI](https://github.com/emreocell/ai-healthcare-decision-support/actions/workflows/ci.yml/badge.svg)](https://github.com/emreocell/ai-healthcare-decision-support/actions/workflows/ci.yml)
-![Node](https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=node.js&logoColor=white)
-![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?logo=solidity&logoColor=white)
+![Node](https://img.shields.io/badge/Node.js-%3E%3D22.13-339933?logo=node.js&logoColor=white)
+![Hardhat](https://img.shields.io/badge/Hardhat-3.x-FFF100?logo=ethereum&logoColor=111)
+![Solidity](https://img.shields.io/badge/Solidity-0.8.34-363636?logo=solidity&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-research%20prototype-8a5a13)
 
-This repository is a full modernization of my Computer Engineering graduation-project prototype. The original idea combined blockchain-backed medical records with AI support. Version 2 keeps the research intent but changes the architecture around a stricter principle:
+This repository is a full engineering modernization of my Computer Engineering graduation-project prototype. The original idea combined blockchain-backed medical records with AI support. HealthChain v2 keeps the research intent while enforcing a stricter architectural rule:
 
 **A public blockchain may prove integrity; it must not become a database for private medical content.**
 
-The result is a compact end-to-end system with a Solidity registry, a browser client, a Node.js API, explicit AI privacy consent, tests, CI, and a documented threat model.
+The result is a compact end-to-end system with a Solidity registry, a browser client, a Node.js API, explicit AI privacy consent, deterministic builds, tests, dependency audit gates, CI, and a documented threat model.
 
 > [!CAUTION]
 > This project is **not** a medical device, diagnostic system, treatment service, electronic health record product, or compliance package. Do not use it for real clinical decisions or store real patient information in the demo.
 
-## What changed from the thesis prototype?
+## Why v2 exists
 
-The original public prototype stored names and conditions directly in a smart contract, exposed mutable "admin" operations without access control, committed generated dependency folders, used a hardcoded contract address, and contained an AI API credential in source code. The v2 design replaces those patterns with explicit security boundaries and an auditable project structure.
+The thesis implementation proved the original concept, but several patterns were not appropriate for a public, portfolio-grade repository: generated dependencies were committed, deployment details were hardcoded, plaintext medical fields were written on-chain, unrestricted administrative mutation paths existed, and an AI credential appeared in source history.
 
-See [`docs/MODERNIZATION.md`](docs/MODERNIZATION.md) for the detailed change list.
+HealthChain v2 treats those weaknesses as engineering problems to solve rather than hide. The modernization is documented in [`docs/MODERNIZATION.md`](docs/MODERNIZATION.md).
 
 ## Architecture
 
@@ -29,7 +30,7 @@ See [`docs/MODERNIZATION.md`](docs/MODERNIZATION.md) for the detailed change lis
 flowchart LR
     Patient[Patient / User] --> Web[Browser UI]
     Web -->|salt + canonicalize + SHA-256| Proof[Private local proof bundle]
-    Web -->|only bytes32 digest| Chain[MedicalRecordRegistry]
+    Web -->|bytes32 integrity digest only| Chain[MedicalRecordRegistry]
     Web -->|explicitly consented context| API[Node.js API]
     API -->|Responses API| AI[Configured OpenAI model]
 
@@ -37,48 +38,79 @@ flowchart LR
     Chain -. never receives .-> PHI[Names / diagnoses / notes / documents]
 ```
 
-### Trust boundaries
+### Data-handling boundaries
 
-- **On-chain:** salted data digest, hashed record category, author wallet, timestamp, revocation status.
-- **Off-chain/local:** clinical note, random salt, proof bundle.
-- **Optional AI request:** only the context the user explicitly enters and consents to send.
-- **Not included:** production database, hospital identity system, encrypted object storage, FHIR server, or compliance layer.
+| Boundary | What is handled there | What is deliberately excluded |
+| --- | --- | --- |
+| Public blockchain | Salted record digest, hashed category, author wallet, timestamp, revocation marker | Names, diagnoses, notes, documents, identifiers |
+| Browser / local proof | Original demo payload, random 32-byte salt, verification bundle | Automatic remote persistence |
+| Node.js API | Explicitly submitted, consented educational context | Request-body logging, automatic blockchain writes |
+| AI provider | Only the context submitted to the optional AI endpoint | Blockchain private keys, local proof bundle |
 
-The separation is intentional. Read the full [`architecture`](docs/ARCHITECTURE.md) and [`threat model`](docs/THREAT_MODEL.md).
+Authorization controls **who may write** a patient's integrity proof. It does not make public-chain metadata confidential.
 
-## Key features
+Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) before extending the system.
+
+## Core capabilities
 
 ### Blockchain integrity registry
 
 - Patient-owned provider write authorization.
 - Append-only record anchoring.
 - Salted `SHA-256` content digests instead of plaintext medical records.
-- Hashed record categories instead of readable diagnosis/category strings.
+- Hashed record categories instead of readable clinical labels.
 - Patient-only revocation markers.
 - Duplicate digest prevention per patient.
-- Contract events suitable for an audit trail.
-- No global patient enumeration function.
+- Contract events for auditable history.
+- No unrestricted medical-record admin and no global patient enumeration helper.
 
-### Private proof bundle
+### Local integrity proofs
 
-The browser creates a random 32-byte salt and hashes the local payload before sending anything to the contract. After anchoring, the user can download a local JSON proof bundle containing the payload, salt, digest, contract address, chain ID, and transaction hash.
+The browser generates a cryptographically random 32-byte salt and computes a digest from the canonical local payload before any blockchain transaction is submitted.
 
-The proof bundle is intentionally excluded by `.gitignore` because it may contain sensitive information.
+```text
+SHA-256( salt_hex + ":" + canonical_json_payload )
+```
+
+Only the digest is anchored. After a successful transaction, the user can download a private JSON proof bundle containing the local payload, salt, digest, chain ID, contract address, and transaction hash. That bundle is excluded by `.gitignore` because it may contain sensitive information.
+
+A previously downloaded bundle can be verified locally in the browser by recomputing its digest.
+
+### Patient-controlled provider authorization
+
+A patient wallet can explicitly authorize or revoke another wallet's ability to append record proofs. Providers cannot silently gain permission, and only the patient can mark an existing record as revoked.
+
+The record itself is never rewritten: revocation is a state marker on an append-only audit history.
 
 ### AI-assisted clinical education
 
-The optional API endpoint uses the OpenAI Responses API with a configurable model. The default is `gpt-5.6-terra`, while `OPENAI_MODEL` keeps model selection outside source code.
+The optional Node.js endpoint uses the OpenAI Responses API with a model selected through `OPENAI_MODEL`. The default configuration uses `gpt-5.6-terra`.
 
-The endpoint is deliberately constrained:
+The endpoint deliberately requires stronger boundaries than a generic chatbot:
 
-- explicit AI-data consent is required;
-- input size and list lengths are bounded;
+- explicit AI-data-processing consent is required;
+- list lengths and string sizes are bounded;
 - request bodies are not logged;
-- responses are marked `no-store`;
-- output instructions prohibit diagnosis, prescription, dosing, and medication changes;
-- the output is framed as questions and educational notes for discussion with a licensed clinician.
+- health-related responses are marked `Cache-Control: no-store`;
+- request bodies are limited to 16 KB;
+- origins are allowlisted;
+- a basic rate limit is applied;
+- instructions prohibit diagnosis, prescription, dosing, and medication changes;
+- output is framed as educational notes and questions to discuss with a licensed clinician.
 
-This is still an AI model and can be wrong.
+The model can still be wrong. AI output from this project must not be used to make care decisions.
+
+## Technology
+
+| Layer | Technology |
+| --- | --- |
+| Smart contract | Solidity 0.8.34 toolchain |
+| Contract development | Hardhat 3, TypeScript, viem |
+| Contract tests | Node.js `node:test` + viem + Hardhat network helpers |
+| API | Node.js 22+, Express 5 |
+| AI | OpenAI Responses API |
+| Browser | Vanilla HTML/CSS/JavaScript + ethers.js |
+| CI | GitHub Actions |
 
 ## Repository structure
 
@@ -95,8 +127,9 @@ This is still an AI model and can be wrong.
 │   │   │   ├── config.js
 │   │   │   ├── server.js
 │   │   │   └── validation.js
-│   │   └── test/
-│   │       └── validation.test.js
+│   │   ├── test/
+│   │   │   └── validation.test.js
+│   │   └── package.json
 │   └── web/
 │       ├── assets/
 │       │   ├── app.js
@@ -111,14 +144,17 @@ This is still an AI model and can be wrong.
 │   ├── MODERNIZATION.md
 │   └── THREAT_MODEL.md
 ├── scripts/
-│   └── deploy.js
+│   └── deploy.ts
 ├── test/
-│   └── MedicalRecordRegistry.test.js
+│   └── MedicalRecordRegistry.test.ts
 ├── .env.example
 ├── .gitignore
+├── .nvmrc
+├── CHANGELOG.md
+├── CITATION.cff
 ├── CONTRIBUTING.md
 ├── SECURITY.md
-├── hardhat.config.js
+├── hardhat.config.ts
 ├── package-lock.json
 └── package.json
 ```
@@ -127,7 +163,7 @@ This is still an AI model and can be wrong.
 
 ### Requirements
 
-- Node.js 22+
+- Node.js `>=22.13.0` (`.nvmrc` currently pins `22.23.0`)
 - npm
 - MetaMask or another EIP-1193 compatible browser wallet
 
@@ -143,7 +179,7 @@ npm ci
 cp .env.example .env
 ```
 
-Add an API key to `.env` only if you want to use the AI section:
+Add an API key only if you want to exercise the AI section:
 
 ```env
 OPENAI_API_KEY=your_key_here
@@ -152,13 +188,13 @@ OPENAI_MODEL=gpt-5.6-terra
 
 Never commit `.env`.
 
-### 3. Start the local blockchain
+### 3. Start a local chain
 
 ```bash
 npm run chain
 ```
 
-Hardhat exposes the local network at `http://127.0.0.1:8545` with chain ID `31337`.
+The Hardhat development network is expected at `http://127.0.0.1:8545`.
 
 ### 4. Deploy the registry
 
@@ -168,84 +204,100 @@ In a second terminal:
 npm run deploy:local
 ```
 
-The deploy script writes the contract address and chain ID to `apps/web/assets/deployment.json`; there is no address to copy into source code.
+The TypeScript deployment script writes the contract address, chain ID, network name, and deployment timestamp to `apps/web/assets/deployment.json`. No contract address is copied into source code manually.
 
-### 5. Start the web/API server
+### 5. Start the API and web client
 
 ```bash
 npm start
 ```
 
-Open `http://localhost:5000`, connect a wallet configured for the local Hardhat network, and use one of Hardhat's local development accounts.
+Open `http://localhost:5000`, connect a wallet configured for the local Hardhat network, and use a local development account.
 
-## Tests and checks
+## Tests, build, and security checks
 
 ```bash
 npm run check
 npm run audit:runtime
+npm run audit:critical
 npm run test:api
 npm run test:contracts
 ```
 
-`npm test` runs both API and smart-contract test suites. GitHub Actions repeats syntax checks, dependency audits, and tests on pull requests and pushes to `main`.
+Or run both test suites together:
 
-## Security design
+```bash
+npm test
+```
 
-The strongest change in v2 is not a framework choice; it is the data model.
+CI uses the committed lockfile and `npm ci`, compiles the Solidity contract, runs JavaScript checks, rejects high-severity runtime dependency findings, rejects critical findings across the full dependency tree, and executes both API and smart-contract tests.
 
-### Never store plaintext medical data on a public chain
+## Security model
 
-The original prototype stored a patient's name and condition strings directly in contract storage. Public blockchain state is visible and difficult to erase. Version 2 stores only a salted digest and non-readable type hash.
+### Plaintext medical data does not belong on a public chain
 
-### Authorization is for writes, not privacy
+Public blockchain state is observable and difficult to erase. Version 2 therefore stores an integrity digest rather than the medical payload itself.
 
-A patient may authorize a provider wallet to append proofs. Anyone who can inspect the chain can still inspect public metadata. Provider authorization must never be described as record confidentiality.
+### A hash alone is not enough
 
-### No mutable medical-history "admin"
+Short or predictable medical terms can be dictionary-tested. The browser adds a random 32-byte salt before hashing the canonical payload. The salt remains off-chain in the private proof bundle.
 
-The original contract exposed update/delete style functions without access control. Version 2 is append-only: content hashes are not edited. A patient can mark an entry revoked while the original integrity event remains auditable.
+### Authorization is not confidentiality
 
-### Secrets belong in the environment
+Patient-to-provider authorization restricts writes. It does **not** hide wallet addresses, timestamps, transaction relationships, or other public-chain metadata.
 
-The runtime reads `OPENAI_API_KEY` from `.env`/environment variables. The repository tracks only `.env.example`.
+### Medical history is not mutable by a global admin
 
-**Important:** an API credential existed in the historical public source. That historical credential must be considered compromised and revoked at the provider even after current code is fixed.
+The original update/delete pattern was replaced with append-only records and patient-controlled revocation markers. Historical integrity events remain auditable.
 
-More: [`SECURITY.md`](SECURITY.md)
+### Secrets never belong in source control
 
-## Thesis / academic origin
+Runtime credentials are read from environment variables. The repository tracks `.env.example`, never a real `.env`.
 
-This repository evolved from my Fırat University Computer Engineering graduation thesis and its implementation prototype.
+> [!IMPORTANT]
+> An AI provider credential existed in the historical public repository. Removing it from the current tree does not make the historical value safe. Any credential that ever appeared in public Git history must be considered compromised and revoked/rotated at the provider.
+
+See [`SECURITY.md`](SECURITY.md) for the repository security policy.
+
+## Research origin
+
+This project evolved from my Fırat University Computer Engineering graduation thesis and its implementation prototype.
 
 - Graduation thesis PDF: <https://emreocell.github.io/assets/tez.pdf>
 - Portfolio: <https://emreocell.github.io>
 
-The v2 codebase is a modernization of the implementation, not a claim that the original thesis experiments or conclusions have been re-run under the new architecture.
+HealthChain v2 is a modernization of the implementation and security architecture. It is **not** a claim that the original thesis experiments, datasets, evaluation, or conclusions were reproduced under the new design.
 
-## Limitations
+## Current limitations
 
 - No production encrypted health-record database is included.
 - No FHIR/HL7 integration is implemented.
 - Wallet addresses are pseudonymous, not anonymous.
 - Blockchain metadata remains public.
-- Smart contracts have not undergone a professional third-party audit or formal verification.
-- The in-memory API rate limiter is not suitable for horizontally scaled production deployments.
-- AI output is not clinically validated and must not be used to make care decisions.
-- This repository does not claim HIPAA, GDPR, KVKK, medical-device, or hospital-system compliance.
+- The smart contract has not undergone a professional third-party audit or formal verification.
+- The in-memory API rate limiter is intended for a single research instance, not horizontal production scaling.
+- AI output is not clinically validated.
+- The repository does not claim HIPAA, GDPR, KVKK, medical-device, hospital-system, or other healthcare regulatory compliance.
 
 ## Roadmap
 
 - Encrypted off-chain storage adapter with envelope encryption.
 - FHIR-compatible resource mapping without placing FHIR payloads on-chain.
-- Signed provider attestations and institution identity layer.
-- Formal smart-contract property tests / fuzzing.
+- Signed provider attestations and an institution identity layer.
+- Smart-contract fuzzing and property/invariant tests.
 - Privacy-preserving proof experiments for selective disclosure.
 - End-to-end browser tests against a local Hardhat node.
 - Reproducible research fixtures using synthetic, non-patient data only.
 
+## Contributing and citation
+
+Security and privacy boundaries are part of the architecture, not optional conventions. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before submitting changes.
+
+Academic/software citation metadata is available in [`CITATION.cff`](CITATION.cff).
+
 ## License
 
-MIT License - see [`LICENSE`](LICENSE).
+MIT License — see [`LICENSE`](LICENSE).
 
 ---
 

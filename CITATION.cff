@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "AI Healthcare Decision Support - HealthChain"
+message: "If you use or reference this research prototype, please cite this repository."
+type: software
+authors:
+  - family-names: "Öcel"
+    given-names: "Emre"
+version: 2.0.0
+date-released: 2026-09-05
+repository-code: "https://github.com/emreocell/ai-healthcare-decision-support"
+url: "https://github.com/emreocell/ai-healthcare-decision-support"
+license: MIT
+keywords:
+  - healthcare
+  - blockchain
+  - medical-record-integrity
+  - solidity
+  - artificial-intelligence
+  - decision-support
