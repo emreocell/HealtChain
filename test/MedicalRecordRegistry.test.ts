@@ -31,7 +31,7 @@ describe("MedicalRecordRegistry", function () {
 
     const record = await registry.read.getRecord([patient.account.address, 0n]);
     assert.equal(record.dataHash, dataHash);
-    assert.equal(record.author, patient.account.address);
+    assert.equal(record.author.toLowerCase(), patient.account.address.toLowerCase());
     assert.equal(record.revoked, false);
   });
 
