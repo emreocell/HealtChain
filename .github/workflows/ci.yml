@@ -22,8 +22,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Refresh dependencies
-        run: npm install
+      - name: Refresh and patch dependencies
+        run: |
+          npm install
+          npm audit fix
 
       - name: Upload refreshed lockfile
         uses: actions/upload-artifact@v4
