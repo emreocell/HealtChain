@@ -7,8 +7,8 @@ This repository is a research prototype. It is **not** a production electronic h
 ## Sensitive data rules
 
 - Never commit API keys, wallet private keys, `.env` files, patient identifiers, clinical documents, or real medical records.
-- Never place plaintext health information on a public blockchain.
-- The smart contract stores only salted record digests and hashed record categories.
+- Never place plaintext health information, diagnoses, or record categories on a public blockchain.
+- The smart contract stores one salted record digest plus public audit metadata; it does not publish separate hashes for low-entropy medical fields.
 - Local proof bundles can contain health information. Treat them as sensitive files and do not commit them.
 - The API intentionally avoids logging request bodies because they may contain health context.
 
