@@ -2,18 +2,21 @@
   "name": "ai-healthcare-decision-support",
   "version": "2.0.0",
   "private": true,
+  "type": "module",
   "description": "Security-first research prototype for blockchain-backed medical record integrity and AI-assisted clinical education.",
   "scripts": {
     "start": "node apps/api/src/server.js",
     "dev": "node --watch apps/api/src/server.js",
     "chain": "hardhat node",
-    "compile": "hardhat compile",
-    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "build": "hardhat build",
+    "compile": "hardhat build",
+    "deploy:local": "hardhat run scripts/deploy.ts --build-profile production --network localhost",
     "test": "npm run test:api && npm run test:contracts",
     "test:api": "node --test apps/api/test/*.test.js",
-    "test:contracts": "hardhat test",
-    "check": "node --check apps/api/src/config.js && node --check apps/api/src/validation.js && node --check apps/api/src/clinicalEducation.js && node --check apps/api/src/app.js && node --check apps/api/src/server.js && node --check apps/web/assets/app.js && node --check scripts/deploy.js",
-    "audit:runtime": "npm audit --omit=dev --audit-level=high"
+    "test:contracts": "hardhat test nodejs",
+    "check": "node --check apps/api/src/config.js && node --check apps/api/src/validation.js && node --check apps/api/src/clinicalEducation.js && node --check apps/api/src/app.js && node --check apps/api/src/server.js && node --check apps/web/assets/app.js && hardhat build",
+    "audit:runtime": "npm audit --omit=dev --audit-level=high",
+    "audit:critical": "npm audit --audit-level=critical"
   },
   "keywords": [
     "healthcare",
@@ -27,11 +30,11 @@
   "author": "Emre Öcel",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "6.1.2",
-    "hardhat": "2.29.1"
+    "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
+    "hardhat": "3.15.0"
   },
   "dependencies": {
     "cors": "2.8.6",
