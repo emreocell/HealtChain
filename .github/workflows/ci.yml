@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.23.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Static and contract build checks
+        run: npm run check
+
+      - name: Runtime dependency audit
+        run: npm run audit:runtime
+
+      - name: Critical dependency audit
+        run: npm run audit:critical
+
+      - name: API tests
+        run: npm run test:api
+
+      - name: Smart contract tests
+        run: npm run test:contracts

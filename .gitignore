@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Hardhat generated output
+artifacts/
+cache/
+coverage/
+typechain-types/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local proof bundles may contain health information
+healthchain-proof-*.json
