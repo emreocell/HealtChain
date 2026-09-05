@@ -3,7 +3,7 @@
 > Security-first research prototype for **medical-record integrity proofs + patient-controlled blockchain authorization + AI-assisted clinical education**.
 
 [![CI](https://github.com/emreocell/ai-healthcare-decision-support/actions/workflows/ci.yml/badge.svg)](https://github.com/emreocell/ai-healthcare-decision-support/actions/workflows/ci.yml)
-![Node](https://img.shields.io/badge/Node.js-%3E%3D20-339933?logo=node.js&logoColor=white)
+![Node](https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=node.js&logoColor=white)
 ![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?logo=solidity&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-research%20prototype-8a5a13)
@@ -127,7 +127,7 @@ This is still an AI model and can be wrong.
 
 ### Requirements
 
-- Node.js 20+
+- Node.js 22+
 - npm
 - MetaMask or another EIP-1193 compatible browser wallet
 
@@ -182,11 +182,12 @@ Open `http://localhost:5000`, connect a wallet configured for the local Hardhat 
 
 ```bash
 npm run check
+npm run audit:runtime
 npm run test:api
 npm run test:contracts
 ```
 
-`npm test` runs both API and smart-contract test suites. GitHub Actions repeats syntax checks and tests on pull requests and pushes to `main`.
+`npm test` runs both API and smart-contract test suites. GitHub Actions repeats syntax checks, dependency audits, and tests on pull requests and pushes to `main`.
 
 ## Security design
 

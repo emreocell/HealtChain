@@ -22,11 +22,24 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Refresh dependencies
+        run: npm install
+
+      - name: Upload refreshed lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: refreshed-package-lock
+          path: package-lock.json
+          retention-days: 1
 
       - name: Static syntax checks
         run: npm run check
+
+      - name: Runtime dependency audit
+        run: npm run audit:runtime
+
+      - name: Critical dependency audit
+        run: npm audit --audit-level=critical
 
       - name: API tests
         run: npm run test:api

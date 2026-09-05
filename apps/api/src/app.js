@@ -1,7 +1,6 @@
 const crypto = require("crypto");
 const path = require("path");
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const { ValidationError, validateClinicalRequest } = require("./validation");
 
@@ -54,7 +53,7 @@ function createApp({ config, clinicalEducationService }) {
     })
   );
 
-  app.use(bodyParser.json({ limit: "16kb" }));
+  app.use(express.json({ limit: "16kb" }));
 
   app.get("/health", (req, res) => {
     res.setHeader("Cache-Control", "no-store");

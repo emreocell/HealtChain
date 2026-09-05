@@ -12,7 +12,8 @@
     "test": "npm run test:api && npm run test:contracts",
     "test:api": "node --test apps/api/test/*.test.js",
     "test:contracts": "hardhat test",
-    "check": "node --check apps/api/src/config.js && node --check apps/api/src/validation.js && node --check apps/api/src/clinicalEducation.js && node --check apps/api/src/app.js && node --check apps/api/src/server.js && node --check apps/web/assets/app.js && node --check scripts/deploy.js"
+    "check": "node --check apps/api/src/config.js && node --check apps/api/src/validation.js && node --check apps/api/src/clinicalEducation.js && node --check apps/api/src/app.js && node --check apps/api/src/server.js && node --check apps/web/assets/app.js && node --check scripts/deploy.js",
+    "audit:runtime": "npm audit --omit=dev --audit-level=high"
   },
   "keywords": [
     "healthcare",
@@ -26,17 +27,16 @@
   "author": "Emre Öcel",
   "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "hardhat": "^2.22.19"
+    "@nomicfoundation/hardhat-toolbox": "6.1.2",
+    "hardhat": "2.29.1"
   },
   "dependencies": {
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.0.0",
-    "express": "^5.1.0",
-    "openai": "^5.8.2"
+    "cors": "2.8.6",
+    "dotenv": "17.4.2",
+    "express": "5.2.1",
+    "openai": "7.10.0"
   }
 }
