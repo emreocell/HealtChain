@@ -6,9 +6,18 @@ const { ValidationError, validateClinicalRequest } = require("./validation");
 
 function createRateLimiter({ windowMs, max }) {
   const buckets = new Map();
+  let lastSweepAt = 0;
 
   return (req, res, next) => {
     const now = Date.now();
+
+    if (now - lastSweepAt >= windowMs) {
+      for (const [bucketKey, bucket] of buckets) {
+        if (now - bucket.startedAt >= windowMs) buckets.delete(bucketKey);
+      }
+      lastSweepAt = now;
+    }
+
     const key = req.ip || req.socket.remoteAddress || "unknown";
     const current = buckets.get(key);
 
@@ -39,6 +48,12 @@ function createApp({ config, clinicalEducationService }) {
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+    );
     next();
   });
 

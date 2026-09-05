@@ -9,11 +9,11 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-research%20prototype-8a5a13)
 
-This repository is a full engineering modernization of my Computer Engineering graduation-project prototype. The original idea combined blockchain-backed medical records with AI support. HealthChain v2 keeps the research intent while enforcing a stricter architectural rule:
+This repository is a full engineering modernization of my Computer Engineering graduation-project prototype. HealthChain v2 keeps the original research direction while enforcing a stricter rule:
 
 **A public blockchain may prove integrity; it must not become a database for private medical content.**
 
-The result is a compact end-to-end system with a Solidity registry, a browser client, a Node.js API, explicit AI privacy consent, deterministic builds, tests, dependency audit gates, CI, and a documented threat model.
+The system combines a deliberately small Solidity integrity registry, a browser proof client, a consent-gated Node.js API, AI-assisted clinical education, deterministic builds, tests, dependency audit gates, CI, and an explicit threat model.
 
 > [!CAUTION]
 > This project is **not** a medical device, diagnostic system, treatment service, electronic health record product, or compliance package. Do not use it for real clinical decisions or store real patient information in the demo.
@@ -22,7 +22,7 @@ The result is a compact end-to-end system with a Solidity registry, a browser cl
 
 The thesis implementation proved the original concept, but several patterns were not appropriate for a public, portfolio-grade repository: generated dependencies were committed, deployment details were hardcoded, plaintext medical fields were written on-chain, unrestricted administrative mutation paths existed, and an AI credential appeared in source history.
 
-HealthChain v2 treats those weaknesses as engineering problems to solve rather than hide. The modernization is documented in [`docs/MODERNIZATION.md`](docs/MODERNIZATION.md).
+HealthChain v2 treats those weaknesses as engineering problems to solve rather than hide. See [`docs/MODERNIZATION.md`](docs/MODERNIZATION.md).
 
 ## Architecture
 
@@ -30,20 +30,20 @@ HealthChain v2 treats those weaknesses as engineering problems to solve rather t
 flowchart LR
     Patient[Patient / User] --> Web[Browser UI]
     Web -->|salt + canonicalize + SHA-256| Proof[Private local proof bundle]
-    Web -->|bytes32 integrity digest only| Chain[MedicalRecordRegistry]
+    Web -->|one salted bytes32 digest| Chain[MedicalRecordRegistry]
     Web -->|explicitly consented context| API[Node.js API]
     API -->|Responses API| AI[Configured OpenAI model]
 
     Chain --> Audit[Immutable integrity timeline]
-    Chain -. never receives .-> PHI[Names / diagnoses / notes / documents]
+    Chain -. never receives .-> PHI[Names / diagnoses / record types / notes / documents]
 ```
 
 ### Data-handling boundaries
 
 | Boundary | What is handled there | What is deliberately excluded |
 | --- | --- | --- |
-| Public blockchain | Salted record digest, hashed category, author wallet, timestamp, revocation marker | Names, diagnoses, notes, documents, identifiers |
-| Browser / local proof | Original demo payload, random 32-byte salt, verification bundle | Automatic remote persistence |
+| Public blockchain | One salted record digest, author wallet, timestamp, revocation marker | Names, diagnoses, record categories, notes, documents, identifiers |
+| Browser / local proof | Original demo payload, record category, random 32-byte salt, verification bundle | Automatic remote persistence |
 | Node.js API | Explicitly submitted, consented educational context | Request-body logging, automatic blockchain writes |
 | AI provider | Only the context submitted to the optional AI endpoint | Blockchain private keys, local proof bundle |
 
@@ -57,8 +57,8 @@ Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/THREAT_MODEL.md`]
 
 - Patient-owned provider write authorization.
 - Append-only record anchoring.
-- Salted `SHA-256` content digests instead of plaintext medical records.
-- Hashed record categories instead of readable clinical labels.
+- One salted `SHA-256` commitment per private local payload.
+- No separately guessable diagnosis/category hash on-chain.
 - Patient-only revocation markers.
 - Duplicate digest prevention per patient.
 - Contract events for auditable history.
@@ -66,35 +66,36 @@ Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/THREAT_MODEL.md`]
 
 ### Local integrity proofs
 
-The browser generates a cryptographically random 32-byte salt and computes a digest from the canonical local payload before any blockchain transaction is submitted.
+The browser generates a cryptographically random 32-byte salt and computes a digest from the complete canonical local payload before any blockchain transaction is submitted.
 
 ```text
 SHA-256( salt_hex + ":" + canonical_json_payload )
 ```
 
-Only the digest is anchored. After a successful transaction, the user can download a private JSON proof bundle containing the local payload, salt, digest, chain ID, contract address, and transaction hash. That bundle is excluded by `.gitignore` because it may contain sensitive information.
+The record category is part of that payload, so a single salted commitment covers both the category and note without publishing a low-entropy category hash. Only the digest is anchored.
 
-A previously downloaded bundle can be verified locally in the browser by recomputing its digest.
+After a successful transaction, the user can download a private JSON proof bundle containing the local payload, salt, digest, chain ID, contract address, and transaction hash. That bundle is excluded by `.gitignore` because it may contain sensitive information. A saved bundle can be verified locally by recomputing its digest.
 
 ### Patient-controlled provider authorization
 
-A patient wallet can explicitly authorize or revoke another wallet's ability to append record proofs. Providers cannot silently gain permission, and only the patient can mark an existing record as revoked.
+A patient wallet can explicitly authorize or revoke another wallet's ability to append proofs. Providers cannot silently grant themselves permission, and only the patient can mark an existing record as revoked.
 
-The record itself is never rewritten: revocation is a state marker on an append-only audit history.
+The record is never rewritten: revocation is a state marker on an append-only audit history.
 
 ### AI-assisted clinical education
 
-The optional Node.js endpoint uses the OpenAI Responses API with a model selected through `OPENAI_MODEL`. The default configuration uses `gpt-5.6-terra`.
+The optional Node.js endpoint uses the OpenAI Responses API with a model selected through `OPENAI_MODEL`; the default configuration uses `gpt-5.6-terra`.
 
 The endpoint deliberately requires stronger boundaries than a generic chatbot:
 
 - explicit AI-data-processing consent is required;
 - list lengths and string sizes are bounded;
 - request bodies are not logged;
-- health-related responses are marked `Cache-Control: no-store`;
+- responses are marked `Cache-Control: no-store`;
 - request bodies are limited to 16 KB;
 - origins are allowlisted;
-- a basic rate limit is applied;
+- a rate limit with stale-bucket cleanup is applied;
+- CSP and defensive browser headers are sent;
 - instructions prohibit diagnosis, prescription, dosing, and medication changes;
 - output is framed as educational notes and questions to discuss with a licensed clinician.
 
@@ -128,6 +129,8 @@ The model can still be wrong. AI output from this project must not be used to ma
 │   │   │   ├── server.js
 │   │   │   └── validation.js
 │   │   ├── test/
+│   │   │   ├── app.test.js
+│   │   │   ├── clinicalEducation.test.js
 │   │   │   └── validation.test.js
 │   │   └── package.json
 │   └── web/
@@ -230,17 +233,17 @@ Or run both test suites together:
 npm test
 ```
 
-CI uses the committed lockfile and `npm ci`, compiles the Solidity contract, runs JavaScript checks, rejects high-severity runtime dependency findings, rejects critical findings across the full dependency tree, and executes both API and smart-contract tests.
+CI uses the committed lockfile and `npm ci`, compiles the Solidity contract, runs JavaScript checks, rejects high-severity runtime dependency findings, rejects critical findings across the full dependency tree, and executes API plus smart-contract tests.
 
 ## Security model
 
 ### Plaintext medical data does not belong on a public chain
 
-Public blockchain state is observable and difficult to erase. Version 2 therefore stores an integrity digest rather than the medical payload itself.
+Public blockchain state is observable and difficult to erase. Version 2 stores one salted integrity digest rather than medical fields or medical field hashes.
 
-### A hash alone is not enough
+### A bare hash of a medical category is not private
 
-Short or predictable medical terms can be dictionary-tested. The browser adds a random 32-byte salt before hashing the canonical payload. The salt remains off-chain in the private proof bundle.
+Low-entropy values such as common record categories can be dictionary-tested even when hashed. HealthChain therefore does not store a separate category hash. Category + note + other local fields are covered by the same salted full-payload commitment.
 
 ### Authorization is not confidentiality
 

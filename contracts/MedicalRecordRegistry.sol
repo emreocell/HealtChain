@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 /// @title MedicalRecordRegistry
 /// @notice Research-oriented integrity registry for off-chain medical records.
-/// @dev Never store plaintext medical data or personally identifiable information on-chain.
+/// @dev Never store plaintext medical data, record categories, or personally identifiable information on-chain.
 contract MedicalRecordRegistry {
     error ZeroAddress();
     error EmptyHash();
@@ -15,7 +15,6 @@ contract MedicalRecordRegistry {
 
     struct Record {
         bytes32 dataHash;
-        bytes32 recordTypeHash;
         address author;
         uint64 createdAt;
         bool revoked;
@@ -35,7 +34,6 @@ contract MedicalRecordRegistry {
         address indexed patient,
         uint256 indexed recordIndex,
         bytes32 indexed dataHash,
-        bytes32 recordTypeHash,
         address author,
         uint64 createdAt
     );
@@ -48,6 +46,7 @@ contract MedicalRecordRegistry {
 
     function setProviderAuthorization(address provider, bool authorized) external {
         if (provider == address(0)) revert ZeroAddress();
+
         providerAuthorizations[msg.sender][provider] = authorized;
         emit ProviderAuthorizationChanged(msg.sender, provider, authorized);
     }
@@ -56,11 +55,7 @@ contract MedicalRecordRegistry {
         return providerAuthorizations[patient][provider];
     }
 
-    function addRecord(
-        address patient,
-        bytes32 dataHash,
-        bytes32 recordTypeHash
-    ) external returns (uint256 recordIndex) {
+    function addRecord(address patient, bytes32 dataHash) external returns (uint256 recordIndex) {
         if (patient == address(0)) revert ZeroAddress();
         if (dataHash == bytes32(0)) revert EmptyHash();
         if (msg.sender != patient && !providerAuthorizations[patient][msg.sender]) {
@@ -73,7 +68,6 @@ contract MedicalRecordRegistry {
         patientRecords[patient].push(
             Record({
                 dataHash: dataHash,
-                recordTypeHash: recordTypeHash,
                 author: msg.sender,
                 createdAt: createdAt,
                 revoked: false
@@ -81,14 +75,7 @@ contract MedicalRecordRegistry {
         );
         knownRecordHashes[patient][dataHash] = true;
 
-        emit RecordAdded(
-            patient,
-            recordIndex,
-            dataHash,
-            recordTypeHash,
-            msg.sender,
-            createdAt
-        );
+        emit RecordAdded(patient, recordIndex, dataHash, msg.sender, createdAt);
     }
 
     function revokeRecord(address patient, uint256 recordIndex) external {

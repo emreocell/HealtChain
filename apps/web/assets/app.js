@@ -86,7 +86,7 @@ async function connectWallet() {
   );
 
   $("#wallet-address").textContent = formatAddress(state.account);
-  setStatus("Wallet connected. On-chain views contain hashes only.", "success");
+  setStatus("Wallet connected. On-chain views contain salted proof hashes only.", "success");
   await refreshRecords();
 }
 
@@ -115,10 +115,9 @@ async function anchorRecord(event) {
   crypto.getRandomValues(salt);
   const saltHex = bytesToHex(salt);
   const dataHash = await digestRecord(payload, saltHex);
-  const recordTypeHash = ethers.keccak256(ethers.toUtf8Bytes(recordType.toLocaleLowerCase("en-US")));
 
   setStatus("Submitting integrity proof to the blockchain…");
-  const tx = await state.contract.addRecord(state.account, dataHash, recordTypeHash);
+  const tx = await state.contract.addRecord(state.account, dataHash);
   const receipt = await tx.wait();
 
   state.pendingProof = {
@@ -129,14 +128,13 @@ async function anchorRecord(event) {
     payload,
     saltHex,
     dataHash,
-    recordTypeHash,
     transactionHash: receipt.hash,
   };
 
   $("#proof-digest").textContent = dataHash;
   $("#download-proof").disabled = false;
   $("#record-note").value = "";
-  setStatus("Record hash anchored. Keep the local proof bundle private.", "success");
+  setStatus("Record proof anchored. Keep the local proof bundle private.", "success");
   await refreshRecords();
 }
 
