@@ -22,15 +22,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Refresh and patch dependencies
+      - name: Regenerate lockfile from package manifest
         run: |
-          npm install
-          npm audit fix || true
+          rm package-lock.json
+          npm install --package-lock-only
+          npm ci
 
-      - name: Upload refreshed lockfile
+      - name: Upload regenerated lockfile
         uses: actions/upload-artifact@v4
         with:
-          name: refreshed-package-lock
+          name: regenerated-package-lock
           path: package-lock.json
           retention-days: 1
 
